@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STARFORGE // Student Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700;900&family=Share+Tech+Mono&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   STARFORGE STUDENT PORTAL — DESIGN
+   Tone: Retro-futuristic RPG character sheet.
+   Dark space aesthetic, neon accents, big bold numbers.
+   Students aged 11–14 — engaging but not childish.
+   ============================================================ */
+:root {
+  --bg:         #07090f;
+  --bg2:        #0d1120;
+  --bg3:        #121929;
+  --panel:      #0f1624;
+  --border:     #1a2540;
+  --border-hi:  #2a3d6a;
+  --text:       #ccd6f6;
+  --text-dim:   #4a5a7a;
+  --text-faint: #222d45;
+
+  --xp:         #fbbf24;
+  --xp-dim:     #2d1f05;
+  --xp-glow:    rgba(251,191,36,0.25);
+
+  --hp:         #f87171;
+  --hp-dim:     #2d0e0e;
+  --hp-green:   #34d399;
+  --hp-glow:    rgba(248,113,113,0.2);
+
+  --lp:         #22d3ee;
+  --lp-dim:     #052028;
+  --lp-glow:    rgba(34,211,238,0.2);
+
+  --accent:     #a78bfa;
+  --accent-dim: #1c1535;
+
+  --owned:      #10b981;
+  --owned-dim:  #052818;
+
+  --radius:     8px;
+  --radius-lg:  14px;
+  --font-head:  'Rajdhani', sans-serif;
+  --font-body:  'Nunito', sans-serif;
+  --font-mono:  'Share Tech Mono', monospace;
+
+  --MAX_HP: 100;
+  --XP_PER_LEVEL: 100;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Starfield background */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 20%, rgba(34,211,238,0.04) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(167,139,250,0.04) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 0%, rgba(251,191,36,0.03) 0%, transparent 40%);
+  pointer-events: none; z-index: 0;
+}
+
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    radial-gradient(circle, rgba(255,255,255,0.12) 1px, transparent 1px);
+  background-size: 80px 80px;
+  background-position: 0 0;
+  pointer-events: none; z-index: 0;
+  opacity: .15;
+}
+
+#app {
+  position: relative; z-index: 1;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0 20px 60px;
+}
+
+/* ── HEADER ──────────────────────────────────────────────────── */
+#portal-header {
+  padding: 28px 0 20px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+#portal-logo {
+  font-family: var(--font-head);
+  font-size: 18px; font-weight: 700; letter-spacing: 3px;
+  color: var(--xp); text-shadow: 0 0 20px var(--xp-glow);
+}
+#portal-logo span { color: var(--text-dim); font-weight: 400; }
+#portal-class {
+  font-family: var(--font-mono); font-size: 11px;
+  color: var(--text-dim); letter-spacing: 1px;
+}
+
+/* ── HERO CARD (player identity) ──────────────────────────────── */
+#hero-card {
+  background: var(--panel);
+  border: 1px solid var(--border-hi);
+  border-radius: var(--radius-lg);
+  padding: 28px 32px;
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+}
+#hero-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, var(--lp), var(--xp), var(--accent));
+}
+
+.hero-top {
+  display: flex; align-items: flex-start; gap: 24px;
+  margin-bottom: 24px;
+}
+
+.hero-avatar {
+  width: 72px; height: 72px; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--lp-dim), var(--accent-dim));
+  border: 2px solid var(--lp);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-head); font-size: 28px; font-weight: 900;
+  color: var(--lp); text-shadow: 0 0 16px var(--lp-glow);
+  position: relative;
+}
+
+.hero-identity { flex: 1; }
+.hero-name {
+  font-family: var(--font-head);
+  font-size: 36px; font-weight: 900; letter-spacing: 1px;
+  color: var(--text); line-height: 1;
+  margin-bottom: 6px;
+}
+.hero-subtitle {
+  font-family: var(--font-mono); font-size: 11px;
+  color: var(--text-dim); letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+/* LP balance — big hero number */
+.hero-lp {
+  text-align: right; flex-shrink: 0;
+}
+.lp-number {
+  font-family: var(--font-head);
+  font-size: 56px; font-weight: 900; line-height: 1;
+  color: var(--lp); text-shadow: 0 0 30px var(--lp-glow);
+}
+.lp-label {
+  font-family: var(--font-mono); font-size: 11px;
+  color: var(--lp); letter-spacing: 2px; text-align: right;
+  opacity: .7;
+}
+
+/* ── STAT BARS ────────────────────────────────────────────────── */
+.stat-bars { display: flex; flex-direction: column; gap: 12px; }
+
+.stat-row { display: flex; align-items: center; gap: 12px; }
+.stat-icon { font-size: 18px; width: 24px; text-align: center; flex-shrink: 0; }
+.stat-label {
+  font-family: var(--font-mono); font-size: 11px;
+  letter-spacing: 1.5px; width: 30px; flex-shrink: 0;
+}
+.stat-label.xp { color: var(--xp); }
+.stat-label.hp { color: var(--hp); }
+
+.stat-track {
+  flex: 1; height: 12px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: 6px; overflow: hidden; position: relative;
+}
+.stat-fill {
+  height: 100%; border-radius: 6px;
+  transition: width .6s cubic-bezier(.4,0,.2,1);
+  position: relative;
+}
+.stat-fill.xp {
+  background: linear-gradient(90deg, #d97706, var(--xp), #fde68a);
+  box-shadow: 0 0 10px var(--xp-glow);
+}
+.stat-fill.hp-hi { background: linear-gradient(90deg, #059669, var(--hp-green)); }
+.stat-fill.hp-mid { background: linear-gradient(90deg, #b45309, #f59e0b); }
+.stat-fill.hp-lo { background: linear-gradient(90deg, #991b1b, var(--hp)); box-shadow: 0 0 10px var(--hp-glow); }
+
+.stat-val {
+  font-family: var(--font-mono); font-size: 13px; font-weight: 700;
+  width: 56px; text-align: right; flex-shrink: 0;
+}
+.stat-val.xp { color: var(--xp); }
+.stat-val.hp { color: var(--text-dim); }
+
+/* ── LEVEL PROGRESS ───────────────────────────────────────────── */
+.level-section {
+  margin-top: 20px;
+  display: flex; align-items: center; gap: 16px;
+}
+.level-badge-big {
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 8px 18px;
+  font-family: var(--font-head);
+  font-size: 18px; font-weight: 700; letter-spacing: 2px;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.level-progress-wrap { flex: 1; }
+.level-progress-label {
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--text-dim); letter-spacing: 1px;
+  margin-bottom: 5px;
+  display: flex; justify-content: space-between;
+}
+.level-track {
+  height: 6px; background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border); border-radius: 3px; overflow: hidden;
+}
+.level-fill {
+  height: 100%; background: linear-gradient(90deg, var(--accent), #c4b5fd);
+  border-radius: 3px;
+  transition: width .6s cubic-bezier(.4,0,.2,1);
+  box-shadow: 0 0 8px rgba(167,139,250,0.3);
+}
+
+/* ── SECTION HEADERS ──────────────────────────────────────────── */
+.section-header {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 16px;
+}
+.section-title {
+  font-family: var(--font-head);
+  font-size: 18px; font-weight: 700; letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.section-title.abilities { color: var(--lp); }
+.section-title.owned     { color: var(--owned); }
+.section-line {
+  flex: 1; height: 1px; background: var(--border);
+}
+.section-count {
+  font-family: var(--font-mono); font-size: 11px;
+  color: var(--text-dim); background: var(--bg3);
+  border: 1px solid var(--border); border-radius: 4px;
+  padding: 2px 8px;
+}
+
+/* ── SHOP GRID ────────────────────────────────────────────────── */
+#shop-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+  margin-bottom: 32px;
+}
+
+.shop-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px 18px 16px;
+  display: flex; flex-direction: column; gap: 10px;
+  transition: border-color .2s, transform .2s, box-shadow .2s;
+  position: relative; overflow: hidden;
+}
+.shop-card:hover { border-color: var(--border-hi); transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+.shop-card.can-afford:hover { border-color: var(--lp); box-shadow: 0 8px 32px rgba(34,211,238,0.15); }
+.shop-card.cant-afford { opacity: .55; }
+.shop-card.maxed { border-color: var(--owned); background: var(--owned-dim); }
+.shop-card.maxed:hover { border-color: var(--owned); box-shadow: 0 8px 32px rgba(16,185,129,0.1); }
+
+.shop-card-glow {
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  opacity: 0; transition: opacity .2s;
+}
+.shop-card.can-afford .shop-card-glow { background: var(--lp); opacity: 1; }
+.shop-card.maxed .shop-card-glow { background: var(--owned); opacity: 1; }
+
+.shop-icon { font-size: 36px; line-height: 1; }
+.shop-name {
+  font-family: var(--font-head); font-size: 20px; font-weight: 700;
+  letter-spacing: .5px; color: var(--text);
+}
+.shop-desc { font-size: 13px; color: var(--text-dim); line-height: 1.5; flex: 1; }
+
+.shop-footer { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
+.shop-cost {
+  font-family: var(--font-mono); font-size: 13px; font-weight: 700;
+  color: var(--lp);
+  display: flex; align-items: center; gap: 4px;
+}
+.shop-cost .lp-icon { font-size: 10px; }
+.shop-owned-count {
+  font-family: var(--font-mono); font-size: 11px;
+  color: var(--owned);
+  background: var(--owned-dim); border: 1px solid rgba(16,185,129,0.3);
+  border-radius: 4px; padding: 2px 7px;
+}
+
+.buy-btn {
+  font-family: var(--font-head); font-size: 14px; font-weight: 700;
+  letter-spacing: 1px; padding: 8px 18px;
+  border-radius: var(--radius); border: 1px solid;
+  cursor: pointer; transition: all .15s; white-space: nowrap;
+}
+.buy-btn.active {
+  background: var(--lp-dim); border-color: var(--lp); color: var(--lp);
+}
+.buy-btn.active:hover {
+  background: rgba(34,211,238,0.2); box-shadow: 0 0 16px var(--lp-glow);
+}
+.buy-btn.disabled {
+  background: var(--bg3); border-color: var(--border); color: var(--text-faint);
+  cursor: not-allowed;
+}
+.buy-btn.maxed-btn {
+  background: var(--owned-dim); border-color: var(--owned); color: var(--owned);
+  cursor: default;
+}
+
+/* ── OWNED ABILITIES ──────────────────────────────────────────── */
+#owned-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.owned-card {
+  background: var(--owned-dim);
+  border: 1px solid rgba(16,185,129,0.35);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  display: flex; align-items: flex-start; gap: 12px;
+  animation: ownedPop .3s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes ownedPop {
+  from { transform: scale(.94); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+.owned-icon { font-size: 28px; line-height: 1; flex-shrink: 0; }
+.owned-info { flex: 1; }
+.owned-name {
+  font-family: var(--font-head); font-size: 16px; font-weight: 700;
+  color: var(--owned); margin-bottom: 2px;
+}
+.owned-count {
+  font-family: var(--font-mono); font-size: 20px; font-weight: 700;
+  color: var(--text); line-height: 1;
+}
+.owned-count-label {
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--text-dim); letter-spacing: 1px;
+}
+
+/* ── NO LP MESSAGE ────────────────────────────────────────────── */
+.no-lp-msg {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 24px;
+  text-align: center; color: var(--text-dim); font-size: 13px;
+  line-height: 1.7;
+}
+.no-lp-msg strong { color: var(--xp); display: block; font-family: var(--font-head); font-size: 16px; letter-spacing: 1px; margin-bottom: 6px; }
+
+/* ── EMPTY OWNED ──────────────────────────────────────────────── */
+.empty-owned {
+  color: var(--text-faint); font-size: 13px; font-style: italic;
+  padding: 8px 0;
+}
+
+/* ── PURCHASE FLASH ───────────────────────────────────────────── */
+@keyframes purchaseFlash {
+  0%   { box-shadow: 0 0 0 0 var(--lp-glow); }
+  50%  { box-shadow: 0 0 40px 10px var(--lp-glow); }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+.flash { animation: purchaseFlash .6s ease; }
+
+/* ── NOT FOUND STATE ──────────────────────────────────────────── */
+#not-found {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; min-height: 60vh; gap: 16px; text-align: center;
+}
+#not-found .nf-icon { font-size: 56px; opacity: .3; }
+#not-found h2 { font-family: var(--font-head); font-size: 28px; font-weight: 700; letter-spacing: 2px; color: var(--text-dim); }
+#not-found p { color: var(--text-faint); max-width: 300px; font-size: 13px; }
+
+/* ── TOAST ────────────────────────────────────────────────────── */
+#toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 999; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+.toast { background: var(--bg3); border: 1px solid var(--border-hi); border-radius: var(--radius); padding: 10px 18px; font-family: var(--font-mono); font-size: 12px; color: var(--text); animation: slideIn .2s ease, fadeOut .3s ease 2.2s forwards; }
+.toast.ok { border-left: 3px solid var(--owned); color: var(--owned); }
+.toast.err { border-left: 3px solid var(--hp); color: var(--hp); }
+@keyframes slideIn { from { transform: translateX(20px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes fadeOut { to { opacity: 0; transform: translateY(6px); } }
+
+/* ── CONFIRMATION OVERLAY ─────────────────────────────────────── */
+#confirm-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.75); z-index: 500;
+  align-items: center; justify-content: center;
+  backdrop-filter: blur(6px);
+}
+#confirm-overlay.open { display: flex; }
+.confirm-box {
+  background: var(--bg2); border: 1px solid var(--lp);
+  border-radius: var(--radius-lg); padding: 32px 36px;
+  width: 400px; max-width: 95vw;
+  box-shadow: 0 20px 60px rgba(0,0,0,.7), 0 0 40px rgba(34,211,238,0.1);
+  text-align: center;
+}
+.confirm-box .cb-icon { font-size: 48px; margin-bottom: 12px; }
+.confirm-box h3 {
+  font-family: var(--font-head); font-size: 22px; font-weight: 700;
+  letter-spacing: 2px; color: var(--text); margin-bottom: 8px;
+}
+.confirm-box p { color: var(--text-dim); font-size: 13px; line-height: 1.6; margin-bottom: 6px; }
+.confirm-cost {
+  font-family: var(--font-mono); font-size: 20px; font-weight: 700;
+  color: var(--lp); margin: 12px 0 20px;
+}
+.confirm-actions { display: flex; gap: 12px; justify-content: center; }
+.cb-btn {
+  font-family: var(--font-head); font-size: 16px; font-weight: 700;
+  letter-spacing: 1px; padding: 10px 28px;
+  border-radius: var(--radius); border: 1px solid;
+  cursor: pointer; transition: all .15s;
+}
+.cb-cancel { background: var(--bg3); border-color: var(--border); color: var(--text-dim); }
+.cb-cancel:hover { border-color: var(--border-hi); color: var(--text); }
+.cb-confirm { background: var(--lp-dim); border-color: var(--lp); color: var(--lp); }
+.cb-confirm:hover { background: rgba(34,211,238,0.2); box-shadow: 0 0 20px var(--lp-glow); }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <!-- Content rendered by JS -->
+</div>
+
+<div id="toast-container"></div>
+
+<div id="confirm-overlay">
+  <div class="confirm-box">
+    <div class="cb-icon" id="cb-icon"></div>
+    <h3 id="cb-title">PURCHASE ABILITY?</h3>
+    <p id="cb-name-line" style="color:var(--text);font-size:16px;font-weight:700;margin-bottom:4px;font-family:var(--font-head);letter-spacing:1px;"></p>
+    <p id="cb-desc-line"></p>
+    <div class="confirm-cost" id="cb-cost-line"></div>
+    <div class="confirm-actions">
+      <button class="cb-btn cb-cancel" onclick="closeConfirm()">Cancel</button>
+      <button class="cb-btn cb-confirm" id="cb-confirm-btn">Purchase</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   STARFORGE STUDENT PORTAL — JAVASCRIPT
+   ============================================================
+
+   This page reads student data from localStorage (shared with
+   the teacher dashboard — both files must be in the same folder,
+   opened from the same browser).
+
+   The student is identified by their ID in the URL hash: #studentId
+
+   Students can spend Level Points (LP) on abilities.
+   LP = (Level - 1) - total LP spent on ability purchases.
+   ============================================================ */
+
+const STORAGE_KEY  = 'starforge_v1';
+const ABILITY_KEY  = 'starforge_abilities';
+const TITLE_KEY    = 'starforge_title';
+const XP_PER_LEVEL = 100;
+const MAX_HP       = 100;
+
+// Built-in abilities (must match teacher dashboard)
+const BUILTIN_ABILITIES = [
+  { id: 'shield',        name: 'Shield',        icon: '🛡️', cost: 1, maxOwned: 3, desc: 'Protect yourself from one HP penalty. Tell your teacher when you want to use it.', builtin: true, available: true },
+  { id: 'double_xp',    name: 'Double XP',      icon: '⚡', cost: 2, maxOwned: 2, desc: 'Earn double XP for one task. You must declare it to your teacher before the task starts.', builtin: true, available: true },
+  { id: 'skip',         name: 'Skip',           icon: '⏭️', cost: 2, maxOwned: 1, desc: 'Skip one question or task of your choice. Cannot be used during assessments.', builtin: true, available: true },
+  { id: 'second_chance',name: 'Second Chance',  icon: '💚', cost: 1, maxOwned: 3, desc: 'Restore 10 HP. Tell your teacher to apply it when you need it.', builtin: true, available: true },
+  { id: 'lifeline',     name: 'Lifeline',       icon: '📞', cost: 3, maxOwned: 1, desc: 'Get one yes/no hint from your teacher during any task or quiz.', builtin: true, available: true },
+];
+
+let studentId = window.location.hash.slice(1);
+let student   = null;
+let abilities = [];
+
+// ── Load data ─────────────────────────────────────────────────────
+function loadAll() {
+  // Load students
+  let students = [];
+  try { const r=localStorage.getItem(STORAGE_KEY); if(r) students=JSON.parse(r); } catch(e){}
+  student = students.find(s => s.id === studentId) || null;
+  if (student && !student.abilities) student.abilities = {};
+
+  // Load abilities (merge builtins + custom, preserve availability)
+  let stored = [];
+  try { const r=localStorage.getItem(ABILITY_KEY); if(r) stored=JSON.parse(r); } catch(e){}
+  abilities = BUILTIN_ABILITIES.map(b => {
+    const saved = stored.find(s => s.id === b.id);
+    return saved ? {...b, available: saved.available} : {...b};
+  });
+  stored.filter(s => !s.builtin).forEach(c => abilities.push(c));
+}
+
+function saveStudents() {
+  let students = [];
+  try { const r=localStorage.getItem(STORAGE_KEY); if(r) students=JSON.parse(r); } catch(e){}
+  const idx = students.findIndex(s => s.id === studentId);
+  if (idx >= 0) students[idx] = student;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(students));
+}
+
+// ── LP Calculation ────────────────────────────────────────────────
+function getLevel(xp) { return Math.floor(xp / XP_PER_LEVEL) + 1; }
+function getLPEarned(s) { return Math.max(0, getLevel(s.xp) - 1); }
+function getLPSpentCost(s) {
+  if (!s.abilities) return 0;
+  let total = 0;
+  for (const [abilityId, count] of Object.entries(s.abilities)) {
+    const ab = abilities.find(a => a.id === abilityId);
+    if (ab) total += ab.cost * count;
+  }
+  return total;
+}
+function getLPBalance(s) { return Math.max(0, getLPEarned(s) - getLPSpentCost(s)); }
+function getOwnedCount(s, abilityId) { return (s.abilities && s.abilities[abilityId]) || 0; }
+
+// ── Bar helpers ───────────────────────────────────────────────────
+function hpClass(hp) { const p=(hp/MAX_HP)*100; return p>60?'hp-hi':p>30?'hp-mid':'hp-lo'; }
+function xpBarWidth(xp) {
+  // within the current level (0 to XP_PER_LEVEL)
+  return Math.round((xp % XP_PER_LEVEL) / XP_PER_LEVEL * 100);
+}
+
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ── Render ────────────────────────────────────────────────────────
+function render() {
+  const app = document.getElementById('app');
+  const classTitle = localStorage.getItem(TITLE_KEY) || 'STARFORGE';
+
+  if (!studentId || !student) {
+    app.innerHTML = `
+      <div id="portal-header">
+        <div id="portal-logo">STAR<span>FORGE</span></div>
+      </div>
+      <div id="not-found">
+        <div class="nf-icon">🔍</div>
+        <h2>PORTAL NOT FOUND</h2>
+        <p>This link doesn't match any student in the system. Ask your teacher to generate your portal link from the teacher dashboard.</p>
+      </div>
+    `;
+    return;
+  }
+
+  const s = student;
+  const level = getLevel(s.xp);
+  const lp = getLPBalance(s);
+  const lpEarned = getLPEarned(s);
+  const lpSpent = getLPSpentCost(s);
+  const xpIntoLevel = s.xp % XP_PER_LEVEL;
+  const xpToNextLevel = XP_PER_LEVEL - xpIntoLevel;
+  const levelPct = Math.round((xpIntoLevel / XP_PER_LEVEL) * 100);
+  const hpPct = Math.round((s.hp / MAX_HP) * 100);
+  const avatarLetter = s.name.trim()[0].toUpperCase();
+
+  // Build shop HTML
+  const availableAbilities = abilities.filter(a => a.available);
+  let shopHTML = '';
+  if (availableAbilities.length === 0) {
+    shopHTML = '<div class="no-lp-msg"><strong>SHOP COMING SOON</strong>Your teacher hasn\'t enabled any abilities yet.</div>';
+  } else if (lp === 0 && lpEarned === 0) {
+    shopHTML = `<div class="no-lp-msg"><strong>LEVEL UP TO EARN POINTS</strong>You earn 1 Level Point every time you gain a level. Reach Level 2 to unlock your first point!</div>`;
+  } else {
+    availableAbilities.forEach(ab => {
+      const owned = getOwnedCount(s, ab.id);
+      const isMaxed = ab.maxOwned > 0 && owned >= ab.maxOwned;
+      const canAfford = lp >= ab.cost;
+      const canBuy = !isMaxed && canAfford;
+      const cardClass = isMaxed ? 'maxed' : canAfford ? 'can-afford' : 'cant-afford';
+      const maxLabel = ab.maxOwned > 0 ? `Max ${ab.maxOwned}` : 'Unlimited';
+
+      let btnHTML = '';
+      if (isMaxed) {
+        btnHTML = `<button class="buy-btn maxed-btn" disabled>✓ MAXED</button>`;
+      } else if (canAfford) {
+        btnHTML = `<button class="buy-btn active" onclick="startPurchase('${ab.id}')">BUY</button>`;
+      } else {
+        btnHTML = `<button class="buy-btn disabled" disabled>NEED ${ab.cost} LP</button>`;
+      }
+
+      shopHTML += `
+        <div class="shop-card ${cardClass}" id="shop-card-${ab.id}">
+          <div class="shop-card-glow"></div>
+          <div class="shop-icon">${ab.icon}</div>
+          <div class="shop-name">${esc(ab.name)}</div>
+          <div class="shop-desc">${esc(ab.desc)}</div>
+          <div class="shop-footer">
+            <div>
+              <div class="shop-cost"><span class="lp-icon">◈</span> ${ab.cost} LP · ${maxLabel}</div>
+              ${owned > 0 ? `<div class="shop-owned-count" style="margin-top:4px;">Owned: ${owned}</div>` : ''}
+            </div>
+            ${btnHTML}
+          </div>
+        </div>
+      `;
+    });
+  }
+
+  // Build owned abilities HTML
+  const ownedAbilities = Object.entries(s.abilities || {}).filter(([,count]) => count > 0);
+  let ownedHTML = '';
+  if (ownedAbilities.length === 0) {
+    ownedHTML = '<div class="empty-owned">No abilities unlocked yet — spend your Level Points in the shop above!</div>';
+  } else {
+    ownedAbilities.forEach(([abId, count]) => {
+      const ab = abilities.find(a => a.id === abId);
+      if (!ab) return;
+      ownedHTML += `
+        <div class="owned-card">
+          <div class="owned-icon">${ab.icon}</div>
+          <div class="owned-info">
+            <div class="owned-name">${esc(ab.name)}</div>
+            <div class="owned-count">×${count}</div>
+            <div class="owned-count-label">TOKENS OWNED</div>
+          </div>
+        </div>
+      `;
+    });
+  }
+
+  const absentBanner = !s.present
+    ? `<div style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.3);border-radius:var(--radius);padding:8px 14px;font-size:12px;color:var(--hp);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:16px;">MARKED ABSENT TODAY</div>`
+    : '';
+
+  app.innerHTML = `
+    <div id="portal-header">
+      <div id="portal-logo">STAR<span>FORGE</span></div>
+      <div id="portal-class">${esc(classTitle)}</div>
+    </div>
+
+    ${absentBanner}
+
+    <!-- HERO CARD -->
+    <div id="hero-card">
+      <div class="hero-top">
+        <div class="hero-avatar">${esc(avatarLetter)}</div>
+        <div class="hero-identity">
+          <div class="hero-name">${esc(s.name)}</div>
+          <div class="hero-subtitle">STUDENT · ${s.present ? 'ACTIVE' : 'ABSENT'}</div>
+        </div>
+        <div class="hero-lp">
+          <div class="lp-number">${lp}</div>
+          <div class="lp-label">◈ LEVEL POINTS</div>
+        </div>
+      </div>
+
+      <div class="stat-bars">
+        <div class="stat-row">
+          <span class="stat-label xp">XP</span>
+          <div class="stat-track">
+            <div class="stat-fill xp" style="width:${levelPct}%"></div>
+          </div>
+          <span class="stat-val xp">${s.xp} XP</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label hp" style="color:var(--hp)">HP</span>
+          <div class="stat-track">
+            <div class="stat-fill ${hpClass(s.hp)}" style="width:${hpPct}%"></div>
+          </div>
+          <span class="stat-val hp">${s.hp} / ${MAX_HP}</span>
+        </div>
+      </div>
+
+      <div class="level-section">
+        <div class="level-badge-big">LEVEL ${level}</div>
+        <div class="level-progress-wrap">
+          <div class="level-progress-label">
+            <span>${xpIntoLevel} XP into level ${level}</span>
+            <span>${xpToNextLevel} XP to level ${level + 1}</span>
+          </div>
+          <div class="level-track">
+            <div class="level-fill" style="width:${levelPct}%"></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px;font-family:var(--font-mono);font-size:10px;color:var(--text-faint);letter-spacing:1px;">
+        TOTAL LP EARNED: ${lpEarned} &nbsp;·&nbsp; SPENT: ${lpSpent} &nbsp;·&nbsp; AVAILABLE: ${lp}
+      </div>
+    </div>
+
+    <!-- ABILITY SHOP -->
+    <div class="section-header">
+      <div class="section-title abilities">◈ Ability Shop</div>
+      <div class="section-line"></div>
+      <div class="section-count">${lp} LP available</div>
+    </div>
+    <div id="shop-grid">${shopHTML}</div>
+
+    <!-- OWNED ABILITIES -->
+    <div class="section-header">
+      <div class="section-title owned">✓ Your Abilities</div>
+      <div class="section-line"></div>
+      <div class="section-count">${ownedAbilities.length} unlocked</div>
+    </div>
+    <div id="owned-grid">${ownedHTML}</div>
+  `;
+}
+
+// ── Purchase flow ─────────────────────────────────────────────────
+let pendingPurchaseId = null;
+
+function startPurchase(abilityId) {
+  const ab = abilities.find(a => a.id === abilityId);
+  if (!ab) return;
+  const lp = getLPBalance(student);
+  if (lp < ab.cost) { toast('Not enough Level Points!', 'err'); return; }
+
+  const owned = getOwnedCount(student, abilityId);
+  if (ab.maxOwned > 0 && owned >= ab.maxOwned) { toast('You already own the maximum!', 'err'); return; }
+
+  // Show confirmation
+  pendingPurchaseId = abilityId;
+  document.getElementById('cb-icon').textContent = ab.icon;
+  document.getElementById('cb-title').textContent = 'PURCHASE ABILITY?';
+  document.getElementById('cb-name-line').textContent = ab.name;
+  document.getElementById('cb-desc-line').textContent = ab.desc;
+  document.getElementById('cb-cost-line').textContent = `◈ ${ab.cost} LP`;
+  document.getElementById('cb-confirm-btn').onclick = confirmPurchase;
+  document.getElementById('confirm-overlay').classList.add('open');
+}
+
+function confirmPurchase() {
+  closeConfirm();
+  if (!pendingPurchaseId) return;
+  const ab = abilities.find(a => a.id === pendingPurchaseId);
+  if (!ab) return;
+
+  const lp = getLPBalance(student);
+  if (lp < ab.cost) { toast('Not enough Level Points!', 'err'); return; }
+
+  // Apply purchase
+  if (!student.abilities) student.abilities = {};
+  student.abilities[pendingPurchaseId] = (student.abilities[pendingPurchaseId] || 0) + 1;
+  saveStudents();
+
+  toast(`✓ ${ab.name} unlocked!`, 'ok');
+  pendingPurchaseId = null;
+
+  // Re-render and flash the card
+  render();
+  setTimeout(() => {
+    const card = document.getElementById('shop-card-' + ab.id);
+    if (card) card.classList.add('flash');
+  }, 50);
+}
+
+function closeConfirm() {
+  document.getElementById('confirm-overlay').classList.remove('open');
+  pendingPurchaseId = null;
+}
+
+document.getElementById('confirm-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('confirm-overlay')) closeConfirm();
+});
+
+// ── Toast ─────────────────────────────────────────────────────────
+function toast(msg, type='') {
+  const el = document.createElement('div');
+  el.className = 'toast ' + type; el.textContent = msg;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), 2800);
+}
+
+// ── Poll for updates (teacher may change XP live) ─────────────────
+// Refresh student data every 15 seconds without full page reload
+let lastXP = null;
+setInterval(() => {
+  const prevXP = student ? student.xp : null;
+  const prevHP = student ? student.hp : null;
+  loadAll();
+  if (student && (student.xp !== prevXP || student.hp !== prevHP)) {
+    render();
+    if (student.xp > prevXP) toast(`+${student.xp - prevXP} XP received!`, 'ok');
+  }
+}, 8000);
+
+// ── Escape key ────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeConfirm();
+});
+
+// ── Init ──────────────────────────────────────────────────────────
+loadAll();
+render();
+</script>
+</body>
+</html>
