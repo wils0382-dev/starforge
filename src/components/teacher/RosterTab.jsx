@@ -2,10 +2,10 @@ import LeaderboardPanel from './LeaderboardPanel'
 import StudentCard from './StudentCard'
 
 export default function RosterTab({
-  students, ranked, abilities,
+  students, ranked, abilities, squadrons,
   sortBy, onSortChange,
   onAddStudent, onLoadDemo,
-  onEditStudent, onChangeXP, onChangeHP, onRestoreHP,
+  onEditStudent, onChangeXP, onChangeHP, onRestoreHP, onChangeAP,
   onToggleAttendance, onResetStudent, onRemoveStudent,
   onScrollToCard
 }) {
@@ -55,11 +55,13 @@ export default function RosterTab({
                 key={s.id}
                 student={s}
                 abilities={abilities}
+                squadrons={squadrons}
                 maxXP={maxXP}
                 onEdit={onEditStudent}
                 onChangeXP={onChangeXP}
                 onChangeHP={onChangeHP}
                 onRestoreHP={onRestoreHP}
+                onChangeAP={onChangeAP}
                 onToggleAttendance={onToggleAttendance}
                 onResetStudent={onResetStudent}
                 onRemoveStudent={onRemoveStudent}

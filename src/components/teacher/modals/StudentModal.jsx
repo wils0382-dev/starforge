@@ -1,22 +1,33 @@
 import { useState, useEffect } from 'react'
-import { MAX_HP } from '../../../lib/gameUtils'
+import { MAX_HP, MAX_AP } from '../../../lib/gameUtils'
 
-export default function StudentModal({ open, student, onSave, onClose }) {
-  const [name, setName] = useState('')
-  const [xp,   setXp]   = useState(0)
-  const [hp,   setHp]   = useState(MAX_HP)
+export default function StudentModal({ open, student, squadrons = [], onSave, onClose }) {
+  const [name,       setName]       = useState('')
+  const [xp,         setXp]         = useState(0)
+  const [hp,         setHp]         = useState(MAX_HP)
+  const [ap,         setAp]         = useState(MAX_AP)
+  const [squadronId, setSquadronId] = useState('')
 
   useEffect(() => {
     if (open) {
       setName(student?.name ?? '')
       setXp(student?.xp ?? 0)
       setHp(student?.hp ?? MAX_HP)
+      setAp(student?.ap ?? MAX_AP)
+      setSquadronId(student?.squadron_id ?? '')
     }
   }, [open, student])
 
   function handleSave() {
     if (!name.trim()) return
-    onSave({ id: student?.id ?? null, name: name.trim(), xp: Number(xp), hp: Number(hp) })
+    onSave({
+      id: student?.id ?? null,
+      name: name.trim(),
+      xp: Number(xp),
+      hp: Number(hp),
+      ap: Number(ap),
+      squadron_id: squadronId || null
+    })
   }
 
   if (!open) return null
@@ -39,6 +50,26 @@ export default function StudentModal({ open, student, onSave, onClose }) {
 
         <label>Starting HP</label>
         <input type="number" value={hp} min={0} max={MAX_HP} onChange={e => setHp(e.target.value)} />
+
+        <label>Starting AP</label>
+        <input type="number" value={ap} min={0} max={MAX_AP} onChange={e => setAp(e.target.value)} />
+
+        <label>Squadron (optional)</label>
+        <select
+          value={squadronId}
+          onChange={e => setSquadronId(e.target.value)}
+          style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border-hi)', borderRadius: 'var(--radius)', color: squadronId ? 'var(--text)' : 'var(--text-dim)', fontFamily: 'var(--font-ui)', fontSize: 14, padding: '8px 12px' }}
+        >
+          <option value="">— No Squadron —</option>
+          {squadrons.map(sq => (
+            <option key={sq.id} value={sq.id}>{sq.emoji} {sq.name}</option>
+          ))}
+        </select>
+        {squadrons.length === 0 && (
+          <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 4, fontFamily: 'var(--font-mono)' }}>
+            Create squadrons in the Portal Manager tab first.
+          </div>
+        )}
 
         <div className="modal-actions">
           <button className="btn" onClick={onClose}>Cancel</button>

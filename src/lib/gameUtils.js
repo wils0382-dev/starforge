@@ -1,5 +1,6 @@
 export const XP_PER_LEVEL = 100
 export const MAX_HP = 100
+export const MAX_AP = 100
 
 export function getLevel(xp) {
   return Math.floor(xp / XP_PER_LEVEL) + 1

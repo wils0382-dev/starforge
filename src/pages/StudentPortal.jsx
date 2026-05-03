@@ -2,8 +2,22 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import {
   getLevel, getLPEarned, getLPSpent, getLPBalance,
-  getOwnedCount, hpClass, xpLevelPct, XP_PER_LEVEL, MAX_HP
+  getOwnedCount, hpClass, xpLevelPct, XP_PER_LEVEL, MAX_HP, MAX_AP
 } from '../lib/gameUtils'
+
+function prerequisiteName(name) {
+  if (name.endsWith(' III')) return name.replace(/ III$/, ' II')
+  if (name.endsWith(' II'))  return name.replace(/ II$/, ' I')
+  return null
+}
+
+function hasPrerequisite(ability, studentAbilities, allAbilities) {
+  const prereq = prerequisiteName(ability.name)
+  if (!prereq) return true
+  const prereqAbility = allAbilities.find(a => a.name === prereq)
+  if (!prereqAbility) return true
+  return studentAbilities.some(sa => sa.ability_id === prereqAbility.id && sa.quantity > 0)
+}
 
 const AVATARS = [
   '🚀','🛸','⚡','🌟','🔮','🤖','🛡️','⚔️','🌙','🪐',
@@ -20,13 +34,23 @@ export default function StudentPortal() {
   const [error, setError]         = useState('')
   const [toasts, setToasts]       = useState([])
   const [confirm, setConfirm]     = useState(null)
+  const [squadron, setSquadron]   = useState(null)
 
   // Avatar + alias state
   const [avatarPickerOpen, setAvatarPickerOpen] = useState(false)
   const [aliasInput, setAliasInput]             = useState('')
   const [aliasSaving, setAliasSaving]           = useState(false)
 
+  // Ability window state
+  const [windowOpen, setWindowOpen]               = useState(false)
+  const [windowMessage, setWindowMessage]         = useState('')
+  const [windowExpiresAt, setWindowExpiresAt]     = useState(null)
+  const [windowEventData, setWindowEventData]     = useState(null)
+  const [windowSecondsLeft, setWindowSecondsLeft] = useState(0)
+  const [activatedAbility, setActivatedAbility]   = useState(null)
+
   const channelRef = useRef(null)
+  const windowChannelRef = useRef(null)
   let _toastId = 0
 
   function addToast(msg, type = '') {
@@ -56,7 +80,7 @@ export default function StudentPortal() {
 
     const { data: cls } = await supabase
       .from('classes')
-      .select('name')
+      .select('name, window_open, window_message, window_expires_at, event_data')
       .eq('id', studentData.class_id)
       .single()
 
@@ -70,8 +94,63 @@ export default function StudentPortal() {
     setStudent(studentData)
     setClassData(cls)
     setAbilities(abs ?? [])
+
+    // If a window is already open when student logs in, show it
+    if (cls?.window_open && cls?.window_expires_at && new Date(cls.window_expires_at) > Date.now()) {
+      setWindowOpen(true)
+      setWindowMessage(cls.window_message || '')
+      setWindowExpiresAt(cls.window_expires_at)
+      setWindowEventData(cls.event_data ?? null)
+    }
+
     setLoading(false)
   }
+
+  // ── Ability window broadcast ───────────────────────────────────
+  useEffect(() => {
+    if (!student) return
+    const channel = supabase
+      .channel('ability-window-' + student.class_id)
+      .on('broadcast', { event: 'window_open' }, ({ payload }) => {
+        setWindowOpen(true)
+        setWindowMessage(payload.message || '')
+        setWindowExpiresAt(payload.expiresAt)
+        setWindowEventData(payload.event_data ?? null)
+        setActivatedAbility(null)
+        addToast('⚡ Ability window open!', 'ok')
+      })
+      .on('broadcast', { event: 'window_closed' }, () => {
+        setWindowOpen(false)
+        setActivatedAbility(null)
+      })
+      .subscribe()
+    windowChannelRef.current = channel
+    return () => { supabase.removeChannel(channel); windowChannelRef.current = null }
+  }, [student?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Window countdown timer ─────────────────────────────────────
+  useEffect(() => {
+    if (!windowOpen || !windowExpiresAt) return
+    function tick() {
+      const remaining = Math.max(0, Math.round((new Date(windowExpiresAt) - Date.now()) / 1000))
+      setWindowSecondsLeft(remaining)
+      if (remaining === 0) { setWindowOpen(false); setActivatedAbility(null) }
+    }
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
+  }, [windowOpen, windowExpiresAt])
+
+  // ── Fetch squadron when student's squadron_id changes ─────────
+  useEffect(() => {
+    if (!student?.squadron_id) { setSquadron(null); return }
+    supabase
+      .from('squadrons')
+      .select('*')
+      .eq('id', student.squadron_id)
+      .single()
+      .then(({ data }) => setSquadron(data ?? null))
+  }, [student?.squadron_id])
 
   // ── Realtime ───────────────────────────────────────────────────
   useEffect(() => {
@@ -135,9 +214,36 @@ export default function StudentPortal() {
     setAliasSaving(false)
   }
 
+  // ── Ability window activation ──────────────────────────────────
+  function activateAbility(ability) {
+    if (!windowChannelRef.current || activatedAbility) return
+    const cost = ability.ap_cost ?? 0
+    if (cost > 0 && (student.ap ?? MAX_AP) < cost) {
+      addToast(`Not enough AP — need ${cost}, you have ${student.ap ?? MAX_AP}.`, 'err')
+      return
+    }
+    windowChannelRef.current.send({
+      type: 'broadcast',
+      event: 'ability_activated',
+      payload: {
+        activatorId: student.id,
+        activatorName: student.alias || student.name.split(' ')[0],
+        abilityId: ability.id,
+        abilityName: ability.name,
+        abilityIcon: ability.icon,
+        apCost: cost
+      }
+    })
+    setActivatedAbility(ability)
+    addToast(`⚡ ${ability.name} activated!`, 'ok')
+  }
+
   // ── Purchase flow ──────────────────────────────────────────────
   function startPurchase(ability) {
     const lp = getLPBalance(student, abilities)
+    if (!hasPrerequisite(ability, student.student_abilities ?? [], abilities)) {
+      addToast(`Unlock ${prerequisiteName(ability.name)} first!`, 'err'); return
+    }
     if (lp < ability.cost) { addToast('Not enough Level Points!', 'err'); return }
     const owned = getOwnedCount(student, ability.id)
     if (ability.max_owned > 0 && owned >= ability.max_owned) { addToast('You already own the maximum!', 'err'); return }
@@ -239,6 +345,8 @@ export default function StudentPortal() {
   const xpToNext = XP_PER_LEVEL - xpIntoLevel
   const levelPct = xpLevelPct(s.xp)
   const hpPct = Math.round((s.hp / MAX_HP) * 100)
+  const ap    = s.ap ?? MAX_AP
+  const apPct = Math.round((ap / MAX_AP) * 100)
   const displayAlias = s.alias || s.name.split(' ')[0]
   const availableAbilities = abilities.filter(a => a.available)
   const ownedAbilities = s.student_abilities?.filter(sa => sa.quantity > 0) ?? []
@@ -254,6 +362,64 @@ export default function StudentPortal() {
         </div>
 
         {!s.present && <div className="absent-banner">MARKED ABSENT TODAY</div>}
+
+        {/* ── Ability window banner ──────────────────────────── */}
+        {windowOpen && (() => {
+          const isTargeted = windowEventData?.targets?.some(t => t.studentId === s.id)
+          const myDamage   = windowEventData?.targets?.find(t => t.studentId === s.id)?.damage
+          return (
+          <div className={`student-window-banner ${isTargeted ? 'swb-targeted' : ''} ${windowSecondsLeft <= 30 && windowSecondsLeft > 0 ? 'swb-urgent' : ''}`}>
+            <div className="swb-header">
+              <span className="swb-icon">{isTargeted ? '🎯' : '⚡'}</span>
+              <span className="swb-title">{isTargeted ? 'YOU ARE TARGETED!' : 'ABILITY WINDOW OPEN'}</span>
+              <span className={`swb-timer ${windowSecondsLeft <= 30 ? 'urgent' : ''}`}>
+                {Math.floor(windowSecondsLeft / 60)}:{String(windowSecondsLeft % 60).padStart(2, '0')}
+              </span>
+            </div>
+            {isTargeted && myDamage > 0 && (
+              <div className="swb-incoming">⚠ Incoming: <strong>{myDamage} HP damage</strong> — use an ability to reduce it!</div>
+            )}
+            {windowMessage && <div className="swb-msg">"{windowMessage}"</div>}
+            {activatedAbility ? (
+              <div className="swb-done">
+                ✓ {activatedAbility.icon} <strong>{activatedAbility.name}</strong> activated — your teacher has been notified!
+              </div>
+            ) : ownedAbilities.length === 0 ? (
+              <div className="swb-empty">You have no abilities to activate right now.</div>
+            ) : (
+              <div className="swb-abilities">
+                <div className="swb-prompt">
+                  Use an ability:
+                  <span className="swb-ap-balance"> {student.ap ?? MAX_AP} AP available</span>
+                </div>
+                {ownedAbilities.map(sa => {
+                  const ab = abilities.find(a => a.id === sa.ability_id)
+                  if (!ab) return null
+                  const cost = ab.ap_cost ?? 0
+                  const canAfford = cost === 0 || (student.ap ?? MAX_AP) >= cost
+                  return (
+                    <button
+                      key={sa.ability_id}
+                      className={`swb-btn ${!canAfford ? 'swb-btn-locked' : ''}`}
+                      onClick={() => activateAbility(ab)}
+                      disabled={!canAfford}
+                    >
+                      <span className="swb-btn-icon">{ab.icon}</span>
+                      <span className="swb-btn-name">{ab.name}</span>
+                      {cost > 0 && (
+                        <span className={`swb-btn-ap ${!canAfford ? 'swb-btn-ap-short' : ''}`}>
+                          {cost} AP
+                        </span>
+                      )}
+                      <span className="swb-btn-owned">×{sa.quantity}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+          )
+        })()}
 
         {/* ── Hero card ──────────────────────────────────────── */}
         <div id="hero-card">
@@ -307,6 +473,16 @@ export default function StudentPortal() {
             </div>
           </div>
 
+          {squadron && (
+            <div
+              className="hero-squadron"
+              style={{ borderColor: squadron.color + '66', background: squadron.color + '14', color: squadron.color }}
+            >
+              <span className="hero-sq-emoji">{squadron.emoji}</span>
+              <span className="hero-sq-name">{squadron.name}</span>
+            </div>
+          )}
+
           {/* Stat bars */}
           <div className="stat-bars">
             <div className="stat-row">
@@ -322,6 +498,13 @@ export default function StudentPortal() {
                 <div className={`stat-fill ${hpClass(s.hp)}`} style={{ width: hpPct + '%' }} />
               </div>
               <span className="stat-val hp">{s.hp} / {MAX_HP}</span>
+            </div>
+            <div className="stat-row">
+              <span className="stat-label ap">AP</span>
+              <div className="stat-track">
+                <div className="stat-fill ap" style={{ width: apPct + '%' }} />
+              </div>
+              <span className="stat-val ap">{ap} / {MAX_AP}</span>
             </div>
           </div>
 
@@ -410,20 +593,27 @@ export default function StudentPortal() {
               const owned = getOwnedCount(s, ab.id)
               const isMaxed = ab.max_owned > 0 && owned >= ab.max_owned
               const canAfford = lp >= ab.cost
-              const cardClass = isMaxed ? 'maxed' : canAfford ? 'can-afford' : 'cant-afford'
+              const isLocked = !hasPrerequisite(ab, s.student_abilities ?? [], abilities)
+              const prereq = prerequisiteName(ab.name)
+              const cardClass = isLocked ? 'locked' : isMaxed ? 'maxed' : canAfford ? 'can-afford' : 'cant-afford'
               const maxLabel = ab.max_owned > 0 ? `Max ${ab.max_owned}` : 'Unlimited'
               return (
                 <div key={ab.id} className={`shop-card ${cardClass}`} id={`shop-card-${ab.id}`}>
                   <div className="shop-card-glow" />
-                  <div className="shop-icon">{ab.icon}</div>
+                  <div className="shop-icon">{isLocked ? '🔒' : ab.icon}</div>
                   <div className="shop-name">{ab.name}</div>
                   <div className="shop-desc">{ab.description}</div>
+                  {isLocked && (
+                    <div className="shop-locked-msg">Requires {prereq}</div>
+                  )}
                   <div className="shop-footer">
                     <div>
                       <div className="shop-cost"><span className="lp-icon">◈</span> {ab.cost} LP · {maxLabel}</div>
                       {owned > 0 && <div className="shop-owned-count" style={{ marginTop: 4 }}>Owned: {owned}</div>}
                     </div>
-                    {isMaxed
+                    {isLocked
+                      ? <button className="buy-btn disabled" disabled>🔒 LOCKED</button>
+                      : isMaxed
                       ? <button className="buy-btn maxed-btn" disabled>✓ MAXED</button>
                       : canAfford
                       ? <button className="buy-btn active" onClick={() => startPurchase(ab)}>BUY</button>

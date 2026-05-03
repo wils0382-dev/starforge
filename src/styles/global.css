@@ -118,6 +118,22 @@ body::before {
 }
 #header-stats .stat-val { color: var(--text); font-size: 14px; }
 #header-actions { display: flex; gap: 8px; margin-left: auto; }
+.btn-window { border-color: var(--portal); color: var(--portal); }
+.btn-window:hover { background: var(--portal-dim); }
+.btn-window-live { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: var(--radius); font-family: var(--font-head); font-size: 12px; font-weight: 700; letter-spacing: 1px; color: var(--portal); border: 1px solid var(--portal); background: var(--portal-dim); animation: pulse-live 1.2s ease-in-out infinite; }
+@keyframes pulse-live { 0%,100% { opacity:1; } 50% { opacity:.5; } }
+
+/* ── Ability Window Bar (teacher) ─────────────────────────────── */
+.awb { display: flex; align-items: center; gap: 16px; padding: 10px 24px; background: var(--portal-dim); border-bottom: 1px solid var(--portal); flex-wrap: wrap; }
+.awb-urgent { background: rgba(248,113,113,0.08); border-bottom-color: var(--hp); animation: pulse-live 0.8s ease-in-out infinite; }
+.awb-meta { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.awb-label { font-family: var(--font-head); font-size: 12px; font-weight: 700; letter-spacing: 1px; color: var(--portal); }
+.awb-msg { font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); }
+.awb-feed { display: flex; gap: 10px; flex-wrap: wrap; flex: 1; }
+.awb-waiting { font-family: var(--font-mono); font-size: 11px; color: var(--text-faint); letter-spacing: 1px; }
+.awb-activation { font-family: var(--font-mono); font-size: 11px; color: var(--text); background: var(--bg3); border: 1px solid var(--border-hi); border-radius: var(--radius); padding: 2px 8px; }
+.awb-timer { font-family: var(--font-head); font-size: 22px; font-weight: 700; color: var(--portal); letter-spacing: 2px; flex-shrink: 0; }
+.awb-timer.urgent { color: var(--hp); }
 
 /* ── TABS ────────────────────────────────────────────────────── */
 #tab-bar {
@@ -218,6 +234,8 @@ body::before {
 .act-label.xp { color: var(--xp); }
 .act-label.hp { color: var(--hp); }
 .act-divider { width: 1px; height: 24px; background: var(--border); flex-shrink: 0; }
+.custom-stat-input { width: 44px; background: var(--bg3); border: 1px solid var(--border-hi); border-radius: var(--radius); color: var(--text); font-family: var(--font-mono); font-size: 11px; padding: 3px 6px; text-align: center; -moz-appearance: textfield; }
+.custom-stat-input::-webkit-outer-spin-button, .custom-stat-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .card-secondary { display: flex; gap: 6px; margin-left: auto; }
 
 /* ── STUDENT CODE BADGE ─────────────────────────────────────── */
@@ -581,6 +599,9 @@ body::before {
 .shop-card:hover { border-color: var(--border-hi); transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
 .shop-card.can-afford:hover { border-color: var(--lp); box-shadow: 0 8px 32px rgba(34,211,238,0.15); }
 .shop-card.cant-afford { opacity: .55; }
+.shop-card.locked { opacity: .45; filter: grayscale(.6); }
+.shop-card.locked:hover { transform: none; box-shadow: none; border-color: var(--border); }
+.shop-locked-msg { font-family: var(--font-mono); font-size: 10px; letter-spacing: 1px; color: var(--text-dim); text-transform: uppercase; }
 .shop-card.maxed { border-color: var(--owned); background: var(--owned-dim); }
 .shop-card.maxed:hover { box-shadow: 0 8px 32px rgba(16,185,129,0.1); }
 .shop-card-glow { position: absolute; top: 0; left: 0; right: 0; height: 1px; opacity: 0; transition: opacity .2s; }
@@ -612,6 +633,56 @@ body::before {
 
 /* Absent banner */
 .absent-banner { background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.3); border-radius: var(--radius); padding: 8px 14px; font-size: 12px; color: var(--hp); font-family: var(--font-mono); letter-spacing: 1px; margin-bottom: 16px; }
+
+/* ── Student ability window banner ────────────────────────────── */
+.student-window-banner { background: var(--portal-dim); border: 1px solid var(--portal); border-radius: var(--radius-lg); padding: 16px 18px; margin-bottom: 20px; animation: pulse-live 1.5s ease-in-out infinite; }
+.student-window-banner.swb-urgent { border-color: var(--hp); background: rgba(248,113,113,0.08); animation: pulse-live 0.7s ease-in-out infinite; }
+.swb-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.swb-icon { font-size: 18px; }
+.swb-title { font-family: var(--font-head); font-size: 13px; font-weight: 700; letter-spacing: 1px; color: var(--portal); flex: 1; }
+.swb-timer { font-family: var(--font-head); font-size: 20px; font-weight: 700; color: var(--portal); letter-spacing: 2px; }
+.swb-timer.urgent { color: var(--hp); }
+.swb-msg { font-family: var(--font-mono); font-size: 12px; color: var(--text-dim); margin-bottom: 12px; }
+.swb-prompt { font-family: var(--font-mono); font-size: 10px; letter-spacing: 1px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 8px; }
+.swb-abilities { display: flex; flex-direction: column; gap: 8px; }
+.swb-btn { display: flex; align-items: center; gap: 10px; background: var(--bg3); border: 1px solid var(--portal); border-radius: var(--radius); padding: 10px 14px; cursor: pointer; text-align: left; transition: background .15s, border-color .15s; }
+.swb-btn:hover { background: var(--panel); border-color: var(--lp); }
+.swb-btn-icon { font-size: 20px; flex-shrink: 0; }
+.swb-btn-name { font-family: var(--font-head); font-size: 13px; font-weight: 700; color: var(--text); flex: 1; }
+.swb-btn-owned { font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); }
+.swb-done { font-family: var(--font-mono); font-size: 12px; color: var(--hp-green); letter-spacing: 0.5px; padding: 8px 0; }
+.swb-empty { font-family: var(--font-mono); font-size: 11px; color: var(--text-faint); }
+.swb-incoming { font-family: var(--font-head); font-size: 13px; color: var(--hp); margin-bottom: 8px; }
+.student-window-banner.swb-targeted { border-color: var(--hp); background: rgba(248,113,113,0.1); }
+.student-window-banner.swb-targeted .swb-title { color: var(--hp); }
+
+/* ── Combat event form ────────────────────────────────────────── */
+.combat-target-grid { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+.combat-target-btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: var(--radius); border: 1px solid var(--border-hi); background: var(--bg3); font-family: var(--font-ui); font-size: 13px; color: var(--text-dim); cursor: pointer; transition: all .15s; user-select: none; }
+.combat-target-btn:hover { border-color: var(--portal); color: var(--text); }
+.combat-target-btn.selected { border-color: var(--hp); background: rgba(248,113,113,0.12); color: var(--hp); font-weight: 600; }
+
+/* ── Resolution modal ─────────────────────────────────────────── */
+.resolution-table { display: flex; flex-direction: column; gap: 12px; margin: 12px 0; }
+.resolution-row { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; }
+.res-name { font-family: var(--font-head); font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+.res-detail { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.res-original { font-family: var(--font-mono); font-size: 13px; color: var(--text-dim); text-decoration: line-through; }
+.res-arrow { color: var(--text-dim); }
+.res-final-input { width: 56px; background: var(--bg); border: 1px solid var(--border-hi); border-radius: var(--radius); color: var(--hp); font-family: var(--font-head); font-size: 16px; font-weight: 700; padding: 3px 6px; text-align: center; -moz-appearance: textfield; }
+.res-final-input::-webkit-outer-spin-button, .res-final-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+.res-unit { font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); }
+.res-effects { display: flex; flex-direction: column; gap: 3px; margin-top: 4px; }
+.res-effect { font-family: var(--font-mono); font-size: 11px; padding: 2px 6px; border-radius: 3px; }
+.res-effect.auto { color: var(--hp-green); background: rgba(16,185,129,0.1); }
+.res-effect.manual { color: var(--xp); background: rgba(251,191,36,0.1); }
+.res-other { margin-top: 12px; padding: 10px 12px; background: rgba(251,191,36,0.06); border: 1px solid rgba(251,191,36,0.2); border-radius: var(--radius); }
+.res-other-title { font-family: var(--font-mono); font-size: 10px; letter-spacing: 1px; color: var(--xp); text-transform: uppercase; margin-bottom: 6px; }
+.res-other-row { font-family: var(--font-mono); font-size: 12px; color: var(--text); margin-bottom: 4px; }
+.res-note { color: var(--text-dim); }
+
+/* ── AbilityWindowBar targets ─────────────────────────────────── */
+.awb-targets { font-family: var(--font-mono); font-size: 10px; color: var(--hp); letter-spacing: 0.5px; }
 
 /* Student portal login */
 .student-login { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 80vh; gap: 24px; text-align: center; }
@@ -722,3 +793,194 @@ body::before {
 .not-found .nf-icon { font-size: 56px; opacity: .3; }
 .not-found h2 { font-family: var(--font-head); font-size: 28px; font-weight: 700; letter-spacing: 2px; color: var(--text-dim); }
 .not-found p { color: var(--text-faint); max-width: 300px; font-size: 13px; }
+
+/* ── CLASS SWITCHER ──────────────────────────────────────────────── */
+.class-switcher { position: relative; }
+.cs-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--bg3); border: 1px solid var(--border-hi);
+  border-radius: var(--radius); padding: 5px 10px;
+  color: var(--text); font-family: var(--font-head); font-size: 16px;
+  font-weight: 700; letter-spacing: 1px; cursor: pointer;
+  transition: border-color .15s, background .15s; white-space: nowrap; max-width: 220px;
+}
+.cs-btn:hover { border-color: var(--accent); background: var(--accent-dim); }
+.cs-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 160px; }
+.cs-chevron { font-size: 10px; color: var(--text-dim); flex-shrink: 0; }
+.cs-backdrop { position: fixed; inset: 0; z-index: 99; }
+.cs-dropdown {
+  position: absolute; top: calc(100% + 6px); left: 0; z-index: 100;
+  background: var(--bg2); border: 1px solid var(--border-hi);
+  border-radius: var(--radius-lg); padding: 6px;
+  min-width: 200px; box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+}
+.cs-label {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 2px;
+  color: var(--text-faint); padding: 4px 8px 6px; text-transform: uppercase;
+}
+.cs-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  width: 100%; text-align: left; background: none; border: none;
+  border-radius: var(--radius); padding: 7px 10px;
+  color: var(--text-dim); font-family: var(--font-ui); font-size: 13px;
+  font-weight: 600; cursor: pointer; transition: background .12s, color .12s;
+}
+.cs-item:hover { background: var(--bg3); color: var(--text); }
+.cs-item.active { color: var(--accent); background: var(--accent-dim); }
+.cs-item-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cs-rename-btn {
+  font-size: 11px; padding: 2px 5px; border-radius: 4px;
+  background: var(--bg3); border: 1px solid var(--border);
+  color: var(--text-dim); cursor: pointer; flex-shrink: 0;
+  transition: background .12s;
+}
+.cs-rename-btn:hover { background: var(--border-hi); color: var(--text); }
+.cs-divider { height: 1px; background: var(--border); margin: 4px 0; }
+.cs-new-class { color: var(--portal); }
+.cs-new-class:hover { background: var(--portal-dim); color: var(--portal); }
+.cs-new-form {
+  display: flex; gap: 6px; padding: 4px 4px 2px;
+}
+.cs-new-form input {
+  flex: 1; background: var(--bg3); border: 1px solid var(--border-hi);
+  border-radius: var(--radius); color: var(--text); font-family: var(--font-ui);
+  font-size: 12px; padding: 5px 8px; outline: none;
+}
+.cs-new-form input:focus { border-color: var(--accent); }
+.cs-create-btn {
+  background: var(--accent-dim); border: 1px solid var(--accent);
+  border-radius: var(--radius); color: var(--accent);
+  font-family: var(--font-ui); font-size: 11px; font-weight: 700;
+  padding: 5px 10px; cursor: pointer; white-space: nowrap;
+  transition: background .12s;
+}
+.cs-create-btn:hover { background: rgba(127,90,240,0.3); }
+.cs-create-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+/* ── SQUADRON BADGE (teacher cards) ─────────────────────────────── */
+.squadron-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 7px; border-radius: 10px;
+  border: 1px solid; font-family: var(--font-mono);
+  font-size: 10px; font-weight: 600; letter-spacing: .5px;
+  white-space: nowrap; flex-shrink: 0;
+}
+
+/* ── SQUADRON MANAGEMENT (PortalTab) ─────────────────────────────── */
+.squadron-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.squadron-row {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--panel); border: 1px solid;
+  border-radius: var(--radius); padding: 8px 12px;
+}
+.sq-swatch { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.sq-emoji  { font-size: 16px; }
+.sq-name   { font-family: var(--font-head); font-size: 14px; font-weight: 700; letter-spacing: .5px; flex: 1; }
+.sq-count  { font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); white-space: nowrap; }
+.sq-create-form { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px; }
+.sq-color-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.sq-color-swatch {
+  width: 24px; height: 24px; border-radius: 50%; border: 2px solid transparent;
+  cursor: pointer; transition: transform .12s, border-color .12s;
+}
+.sq-color-swatch:hover    { transform: scale(1.2); }
+.sq-color-swatch.selected { border-color: white; transform: scale(1.15); box-shadow: 0 0 0 2px rgba(255,255,255,0.25); }
+.sq-inline-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-family: var(--font-mono); font-size: 10px; margin-left: 6px;
+}
+
+/* ── LEADERBOARD MODE: TABS + EXTRAS ────────────────────────────── */
+.lb-mode-tabs {
+  display: flex; gap: 6px; flex-wrap: wrap; justify-content: center;
+  margin-bottom: 20px;
+}
+.lb-tab-btn {
+  padding: 6px 18px; border-radius: 20px;
+  border: 1px solid var(--border-hi); background: transparent;
+  color: rgba(255,255,255,0.4); font-family: var(--font-head);
+  font-size: 13px; font-weight: 600; letter-spacing: 1px;
+  cursor: pointer; transition: all .15s;
+}
+.lb-tab-btn:hover  { border-color: rgba(255,255,255,0.4); color: rgba(255,255,255,0.7); }
+.lb-tab-btn.active { border-color: var(--accent); background: rgba(127,90,240,0.2); color: var(--accent); }
+.lb-sq-tag { font-size: 14px; }
+.lb-loading {
+  text-align: center; color: var(--text-dim);
+  font-family: var(--font-mono); font-size: 14px; padding: 60px 0;
+}
+
+/* ── HERO SQUADRON (student portal) ─────────────────────────────── */
+.hero-squadron {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  margin: 10px 0 4px; padding: 6px 16px; border-radius: 20px;
+  border: 1px solid; font-family: var(--font-head);
+  font-size: 14px; font-weight: 700; letter-spacing: 1.5px;
+}
+.hero-sq-emoji { font-size: 18px; }
+.hero-sq-name  { letter-spacing: 2px; text-transform: uppercase; }
+
+/* ── AP COLOUR TOKEN ─────────────────────────────────────────────── */
+:root {
+  --ap:      #3b82f6;
+  --ap-dim:  #0f1f3d;
+  --ap-glow: rgba(59,130,246,0.18);
+}
+
+/* ── AP BAR (teacher cards) ──────────────────────────────────────── */
+.bar-label.ap  { color: var(--ap); }
+.bar-fill.ap   { background: linear-gradient(90deg, #1d4ed8, #3b82f6); box-shadow: 0 0 6px var(--ap-glow); }
+.bar-val.ap    { color: var(--ap); }
+
+/* ── AP CONTROLS (teacher cards) ────────────────────────────────── */
+.card-actions-ap {
+  display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+}
+.act-label.ap { color: var(--ap); font-family: var(--font-mono); font-size: 10px; font-weight: 700; letter-spacing: 1px; min-width: 22px; }
+.btn-ap-sub { background: var(--ap-dim); border-color: var(--ap); color: var(--ap); }
+.btn-ap-sub:hover { background: rgba(59,130,246,0.22); }
+.btn-ap-add { background: var(--ap-dim); border-color: var(--ap); color: var(--ap); }
+.btn-ap-add:hover { background: rgba(59,130,246,0.30); }
+
+/* ── NEW LESSON BUTTON ───────────────────────────────────────────── */
+.btn-lesson { background: var(--ap-dim); border-color: var(--ap); color: var(--ap); }
+.btn-lesson:hover { background: rgba(59,130,246,0.22); box-shadow: 0 0 8px var(--ap-glow); }
+
+/* ── AP RESOLUTION SECTION ───────────────────────────────────────── */
+.res-ap-section {
+  background: var(--ap-dim); border: 1px solid var(--ap);
+  border-radius: var(--radius); padding: 12px 14px; margin-top: 12px;
+}
+.res-ap-title {
+  font-family: var(--font-head); font-size: 13px; font-weight: 700;
+  color: var(--ap); letter-spacing: 1px; margin-bottom: 8px;
+}
+.res-ap-row {
+  display: flex; align-items: baseline; gap: 10px;
+  font-size: 13px; color: var(--text); padding: 3px 0;
+}
+.res-ap-name   { font-weight: 600; min-width: 100px; }
+.res-ap-cost   { font-family: var(--font-mono); color: var(--ap); font-weight: 700; white-space: nowrap; }
+.res-ap-detail { font-size: 11px; color: var(--text-dim); font-family: var(--font-mono); }
+
+/* ── AP BAR (student portal) ─────────────────────────────────────── */
+.stat-label.ap { color: var(--ap); }
+.stat-fill.ap  { background: linear-gradient(90deg, #1d4ed8, #3b82f6); box-shadow: 0 0 8px var(--ap-glow); }
+.stat-val.ap   { color: var(--ap); }
+
+/* ── ABILITY WINDOW: AP display ──────────────────────────────────── */
+.swb-ap-balance {
+  font-family: var(--font-mono); font-size: 11px; color: var(--ap);
+  margin-left: 8px; letter-spacing: .5px;
+}
+.swb-btn-ap {
+  font-family: var(--font-mono); font-size: 10px; font-weight: 700;
+  color: var(--ap); background: var(--ap-dim); border-radius: 4px;
+  padding: 1px 5px; white-space: nowrap;
+}
+.swb-btn-ap.swb-btn-ap-short { color: var(--hp); background: var(--hp-dim); }
+.swb-btn.swb-btn-locked {
+  opacity: 0.4; cursor: not-allowed;
+  border-color: var(--border) !important;
+}
+.swb-btn.swb-btn-locked:hover { background: transparent; }

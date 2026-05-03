@@ -2,13 +2,23 @@ import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 
 export default function TeacherLogin() {
-  const { signIn, signUp } = useAuth()
+  const { signIn, signUp, resetPassword } = useAuth()
   const [tab, setTab] = useState('signin') // 'signin' | 'signup'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [signupDone, setSignupDone] = useState(false)
+  const [resetSent, setResetSent] = useState(false)
+
+  async function handleForgotPassword() {
+    if (!email) { setError('Enter your email above first, then click Forgot Password.'); return }
+    setError('')
+    setLoading(true)
+    await resetPassword(email)
+    setLoading(false)
+    setResetSent(true)
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -91,6 +101,25 @@ export default function TeacherLogin() {
               required
               style={{ width: '100%', background: 'var(--bg3)', border: '1px solid var(--border-hi)', borderRadius: 'var(--radius)', color: 'var(--text)', fontFamily: 'var(--font-ui)', fontSize: 14, padding: '8px 12px', outline: 'none' }}
             />
+
+            {tab === 'signin' && (
+              <div style={{ textAlign: 'right', marginTop: 6, marginBottom: 2 }}>
+                {resetSent ? (
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--xp)' }}>
+                    Reset email sent — check your inbox.
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleForgotPassword}
+                    disabled={loading}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-dim)', textDecoration: 'underline', padding: 0 }}
+                  >
+                    Forgot password?
+                  </button>
+                )}
+              </div>
+            )}
 
             <button className="login-btn" type="submit" disabled={loading}>
               {loading ? 'LOADING...' : tab === 'signin' ? 'ENTER THE FORGE' : 'CREATE ACCOUNT'}

@@ -2,32 +2,56 @@ import { useState } from 'react'
 import { getLevel, getLPBalance, getLPSpent } from '../../lib/gameUtils'
 import { useToast } from '../../context/ToastContext'
 
+const SQUADRON_COLORS = [
+  '#ef4444', '#f97316', '#eab308', '#22c55e',
+  '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899',
+]
+
 export default function PortalTab({
   students, abilities,
+  squadrons, onSaveSquadron, onDeleteSquadron,
   pendingAliases,
   onApproveAlias, onRejectAlias,
-  onToggleAbility, onDeleteAbility, onAddAbility
+  onToggleAbility, onDeleteAbility, onAddAbility,
+  onLoadSciFiAbilities
 }) {
   const toast = useToast()
-  const [form, setForm] = useState({ name: '', icon: '', cost: 1, maxOwned: 0, description: '' })
-  const [saving, setSaving] = useState(false)
+  const [abilityForm, setAbilityForm] = useState({ name: '', icon: '', cost: 1, apCost: 0, maxOwned: 0, description: '' })
+  const [abilitySaving, setAbilitySaving] = useState(false)
+
+  // Squadron form
+  const [sqForm, setSqForm] = useState({ name: '', emoji: '⚡', color: SQUADRON_COLORS[0] })
+  const [sqSaving, setSqSaving] = useState(false)
 
   async function handleAddAbility(e) {
     e.preventDefault()
-    if (!form.name.trim() || !form.description.trim()) return
-    setSaving(true)
+    if (!abilityForm.name.trim() || !abilityForm.description.trim()) return
+    setAbilitySaving(true)
     const ok = await onAddAbility({
-      name: form.name.trim(),
-      icon: form.icon.trim() || '✨',
-      cost: Number(form.cost) || 1,
-      maxOwned: Number(form.maxOwned) || 0,
-      description: form.description.trim()
+      name: abilityForm.name.trim(),
+      icon: abilityForm.icon.trim() || '✨',
+      cost: Number(abilityForm.cost) || 1,
+      apCost: Number(abilityForm.apCost) || 0,
+      maxOwned: Number(abilityForm.maxOwned) || 0,
+      description: abilityForm.description.trim()
     })
-    if (ok) setForm({ name: '', icon: '', cost: 1, maxOwned: 0, description: '' })
-    setSaving(false)
+    if (ok) setAbilityForm({ name: '', icon: '', cost: 1, apCost: 0, maxOwned: 0, description: '' })
+    setAbilitySaving(false)
+  }
+
+  async function handleAddSquadron(e) {
+    e.preventDefault()
+    if (!sqForm.name.trim()) return
+    setSqSaving(true)
+    await onSaveSquadron({ name: sqForm.name.trim(), color: sqForm.color, emoji: sqForm.emoji.trim() || '⚡' })
+    setSqForm({ name: '', emoji: '⚡', color: SQUADRON_COLORS[0] })
+    setSqSaving(false)
   }
 
   const studentsWithAbilities = students.filter(s => s.student_abilities?.length > 0)
+
+  // Count members per squadron
+  const memberCount = (sqId) => students.filter(s => s.squadron_id === sqId).length
 
   return (
     <div style={{ position: 'relative', zIndex: 1, display: 'grid', gridTemplateColumns: '1fr 380px', minHeight: 'calc(100vh - 96px)' }}>
@@ -61,6 +85,67 @@ export default function PortalTab({
           </div>
         )}
 
+        {/* ── Squadron management ──────────────────────────────── */}
+        <div className="portal-section">
+          <div className="portal-section-title">Squadrons</div>
+
+          {squadrons.length === 0 ? (
+            <div style={{ color: 'var(--text-dim)', fontSize: 13, padding: '8px 0 16px' }}>
+              No squadrons yet. Create one below to start grouping students.
+            </div>
+          ) : (
+            <div className="squadron-list">
+              {squadrons.map(sq => (
+                <div key={sq.id} className="squadron-row" style={{ borderColor: sq.color + '55' }}>
+                  <span className="sq-swatch" style={{ background: sq.color }} />
+                  <span className="sq-emoji">{sq.emoji}</span>
+                  <span className="sq-name" style={{ color: sq.color }}>{sq.name}</span>
+                  <span className="sq-count">{memberCount(sq.id)} member{memberCount(sq.id) !== 1 ? 's' : ''}</span>
+                  <button className="btn btn-sm btn-danger" onClick={() => onDeleteSquadron(sq.id)}>✕</button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <form className="sq-create-form" onSubmit={handleAddSquadron}>
+            <div className="form-row">
+              <div className="form-group" style={{ flex: 3 }}>
+                <label>Squadron Name</label>
+                <input
+                  type="text" placeholder="e.g. Nova Squad" maxLength={30}
+                  value={sqForm.name}
+                  onChange={e => setSqForm(p => ({ ...p, name: e.target.value }))}
+                  required
+                />
+              </div>
+              <div className="form-group" style={{ flex: 1 }}>
+                <label>Icon</label>
+                <input
+                  type="text" placeholder="⚡" maxLength={4}
+                  value={sqForm.emoji}
+                  onChange={e => setSqForm(p => ({ ...p, emoji: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="form-group">
+              <label>Colour</label>
+              <div className="sq-color-row">
+                {SQUADRON_COLORS.map(c => (
+                  <button
+                    key={c} type="button"
+                    className={`sq-color-swatch ${sqForm.color === c ? 'selected' : ''}`}
+                    style={{ background: c }}
+                    onClick={() => setSqForm(p => ({ ...p, color: c }))}
+                  />
+                ))}
+              </div>
+            </div>
+            <button className="btn btn-portal btn-lg" type="submit" disabled={sqSaving || !sqForm.name.trim()}>
+              {sqSaving ? 'Creating...' : '＋ Create Squadron'}
+            </button>
+          </form>
+        </div>
+
         <div className="portal-info-box">
           <strong>How the Student Portal Works:</strong> Students go to <strong>/student</strong> on the app and type their code. They can view their stats, set an alias and avatar, and spend Level Points on abilities. Print each student's code from the table below.
         </div>
@@ -89,6 +174,14 @@ export default function PortalTab({
                     <td className="link-name">
                       <span style={{ marginRight: 6 }}>{s.avatar_emoji ?? '🚀'}</span>
                       {s.name}
+                      {s.squadron_id && (() => {
+                        const sq = squadrons.find(x => x.id === s.squadron_id)
+                        return sq ? (
+                          <span className="sq-inline-badge" style={{ color: sq.color }}>
+                            {sq.emoji} {sq.name}
+                          </span>
+                        ) : null
+                      })()}
                     </td>
                     <td><span className="level-badge">LVL {getLevel(s.xp)}</span></td>
                     <td><span className="link-lp">◈ {getLPBalance(s, abilities)}</span></td>
@@ -138,7 +231,12 @@ export default function PortalTab({
       {/* Right panel: ability shop editor */}
       <div style={{ padding: 24, overflowY: 'auto' }}>
         <div className="portal-section">
-          <div className="portal-section-title">Ability Shop</div>
+          <div className="portal-section-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span>Ability Shop</span>
+            <button className="btn btn-portal btn-sm" onClick={onLoadSciFiAbilities}>
+              ⚡ Load Sci-Fi Abilities
+            </button>
+          </div>
           <div className="ability-grid">
             {abilities.map(ab => (
               <div key={ab.id} className={`ability-card ${ab.is_builtin ? 'builtin' : 'custom'}`}>
@@ -146,7 +244,9 @@ export default function PortalTab({
                   <div className="ability-icon">{ab.icon}</div>
                   <div className="ability-info">
                     <div className="ability-name">{ab.name}</div>
-                    <div className="ability-cost">{ab.cost} LP · {ab.max_owned > 0 ? `Max: ${ab.max_owned}` : 'Unlimited'}</div>
+                    <div className="ability-cost">
+                      {ab.cost} LP · {ab.ap_cost > 0 ? `${ab.ap_cost} AP · ` : ''}{ab.max_owned > 0 ? `Max: ${ab.max_owned}` : 'Unlimited'}
+                    </div>
                   </div>
                   <span className={`ability-tag ${ab.is_builtin ? 'builtin' : 'custom'}`}>
                     {ab.is_builtin ? 'BUILT-IN' : 'CUSTOM'}
@@ -177,33 +277,41 @@ export default function PortalTab({
               <div className="form-group">
                 <label>Name</label>
                 <input type="text" placeholder="e.g. Time Warp" maxLength={30}
-                  value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} required />
+                  value={abilityForm.name} onChange={e => setAbilityForm(p => ({ ...p, name: e.target.value }))} required />
               </div>
               <div className="form-group">
                 <label>Icon (emoji)</label>
                 <input type="text" placeholder="⚡" maxLength={4}
-                  value={form.icon} onChange={e => setForm(p => ({ ...p, icon: e.target.value }))} />
+                  value={abilityForm.icon} onChange={e => setAbilityForm(p => ({ ...p, icon: e.target.value }))} />
               </div>
             </div>
             <div className="form-row">
               <div className="form-group">
                 <label>Cost (Level Points)</label>
                 <input type="number" min={1} max={10}
-                  value={form.cost} onChange={e => setForm(p => ({ ...p, cost: e.target.value }))} />
+                  value={abilityForm.cost} onChange={e => setAbilityForm(p => ({ ...p, cost: e.target.value }))} />
               </div>
+              <div className="form-group">
+                <label>AP Cost (to activate)</label>
+                <input type="number" min={0} max={100}
+                  value={abilityForm.apCost} onChange={e => setAbilityForm(p => ({ ...p, apCost: e.target.value }))} />
+              </div>
+            </div>
+            <div className="form-row">
               <div className="form-group">
                 <label>Max Owned (0 = unlimited)</label>
                 <input type="number" min={0} max={99}
-                  value={form.maxOwned} onChange={e => setForm(p => ({ ...p, maxOwned: e.target.value }))} />
+                  value={abilityForm.maxOwned} onChange={e => setAbilityForm(p => ({ ...p, maxOwned: e.target.value }))} />
               </div>
+              <div className="form-group" />
             </div>
             <div className="form-group" style={{ marginBottom: 12 }}>
               <label>Description</label>
               <textarea placeholder="e.g. Skip one question of your choice during a test."
-                value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} required />
+                value={abilityForm.description} onChange={e => setAbilityForm(p => ({ ...p, description: e.target.value }))} required />
             </div>
-            <button className="btn btn-portal btn-lg" type="submit" disabled={saving}>
-              {saving ? 'Adding...' : 'Add to Shop'}
+            <button className="btn btn-portal btn-lg" type="submit" disabled={abilitySaving}>
+              {abilitySaving ? 'Adding...' : 'Add to Shop'}
             </button>
           </form>
         </div>
