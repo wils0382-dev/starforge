@@ -441,28 +441,10 @@ export default function StudentPortal() {
       await supabase.from('students').update(update).eq('id', sid)
     }
 
-    // Decrement token
-    const sa = student.student_abilities?.find(x => x.ability_id === ability.id)
-    if (sa) {
-      if (sa.quantity > 1) {
-        await supabase.from('student_abilities')
-          .update({ quantity: sa.quantity - 1 })
-          .eq('student_id', student.id).eq('ability_id', ability.id)
-      } else {
-        await supabase.from('student_abilities')
-          .delete()
-          .eq('student_id', student.id).eq('ability_id', ability.id)
-      }
-    }
-
-    // Update local student state optimistically
+    // Update local student state optimistically (abilities are permanent — no token deduction)
     setStudent(s => {
       let next = { ...s }
       if (updates[s.id]) next = { ...next, ...updates[s.id] }
-      const sas = (s.student_abilities ?? [])
-        .map(x => x.ability_id === ability.id ? (x.quantity > 1 ? { ...x, quantity: x.quantity - 1 } : null) : x)
-        .filter(Boolean)
-      next.student_abilities = sas
       return next
     })
 
@@ -994,8 +976,7 @@ export default function StudentPortal() {
                   <div className="owned-icon">{ab.icon}</div>
                   <div className="owned-card-inner">
                     <div className="owned-name">{ab.name}</div>
-                    <div className="owned-count">×{sa.quantity}</div>
-                    <div className="owned-count-label">TOKENS OWNED</div>
+                    <div className="owned-count-label" style={{ color: 'var(--owned)', fontSize: 11 }}>✓ OWNED</div>
                     {def && (
                       <div className="owned-actions">
                         <button
@@ -1055,7 +1036,7 @@ export default function StudentPortal() {
             <p>{anytimeConfirm.ability.description}</p>
             {(anytimeConfirm.ability.ap_cost ?? 0) > 0 && (
               <div className="confirm-cost" style={{ color: 'var(--ap)' }}>
-                {anytimeConfirm.ability.ap_cost} AP · 1 token consumed
+                {anytimeConfirm.ability.ap_cost} AP
               </div>
             )}
             <div className="confirm-actions">

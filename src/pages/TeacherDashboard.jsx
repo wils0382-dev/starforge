@@ -603,22 +603,6 @@ export default function TeacherDashboard() {
         await supabase.from('students').update(update).eq('id', sid)
       }
     }
-    // Restore ability token
-    const { data: existing } = await supabase
-      .from('student_abilities')
-      .select('quantity')
-      .eq('student_id', use.studentId)
-      .eq('ability_id', use.abilityId)
-      .maybeSingle()
-    if (existing) {
-      await supabase.from('student_abilities')
-        .update({ quantity: existing.quantity + 1 })
-        .eq('student_id', use.studentId)
-        .eq('ability_id', use.abilityId)
-    } else {
-      await supabase.from('student_abilities')
-        .insert({ student_id: use.studentId, ability_id: use.abilityId, quantity: 1 })
-    }
     // Notify student
     windowChannelRef.current?.send({
       type: 'broadcast', event: 'anytime_revoked',
@@ -634,27 +618,13 @@ export default function TeacherDashboard() {
   }, [])
 
   const denyAnytimeUse = useCallback(async (use) => {
-    // Restore AP that was spent
-    const s = students.find(x => x.id === use.studentId)
-    if (s && use.apCost > 0) {
-      const restoredAP = Math.min((s.ap ?? MAX_AP) + use.apCost, MAX_AP)
-      await supabase.from('students').update({ ap: restoredAP }).eq('id', use.studentId)
-    }
-    // Restore ability token
-    const { data: existing } = await supabase
-      .from('student_abilities')
-      .select('quantity')
-      .eq('student_id', use.studentId)
-      .eq('ability_id', use.abilityId)
-      .maybeSingle()
-    if (existing) {
-      await supabase.from('student_abilities')
-        .update({ quantity: existing.quantity + 1 })
-        .eq('student_id', use.studentId)
-        .eq('ability_id', use.abilityId)
-    } else {
-      await supabase.from('student_abilities')
-        .insert({ student_id: use.studentId, ability_id: use.abilityId, quantity: 1 })
+    // Restore AP via snapshot (snapshot captured AP before the ability was used)
+    for (const [sid, snap] of Object.entries(use.snapshots ?? {})) {
+      const update = {}
+      if (snap.ap != null) update.ap = snap.ap
+      if (Object.keys(update).length) {
+        await supabase.from('students').update(update).eq('id', sid)
+      }
     }
     // Notify student
     windowChannelRef.current?.send({
@@ -664,7 +634,7 @@ export default function TeacherDashboard() {
     setAnytimeUses(prev => prev.filter(u => u.useId !== use.useId))
     toast(`Denied: ${use.abilityName} by ${use.studentName}`, 'ok')
     await fetchStudents()
-  }, [students, toast, fetchStudents])
+  }, [toast, fetchStudents])
 
   // ── Alias approval ─────────────────────────────────────────────
   const approveAlias = useCallback(async (studentId) => {
