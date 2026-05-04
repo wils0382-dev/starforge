@@ -16,6 +16,12 @@ export default function TabBar({ activeTab, onSwitch, pendingCount = 0 }) {
           <span className="tab-badge">{pendingCount}</span>
         )}
       </button>
+      <button
+        className={`tab-btn ${activeTab === 'settings' ? 'active' : ''}`}
+        onClick={() => onSwitch('settings')}
+      >
+        ⚙ Settings
+      </button>
     </div>
   )
 }

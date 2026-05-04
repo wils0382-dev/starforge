@@ -11,6 +11,8 @@ import PortalTab from '../components/teacher/PortalTab'
 import LeaderboardMode from '../components/teacher/LeaderboardMode'
 import StudentModal from '../components/teacher/modals/StudentModal'
 import ConfirmModal from '../components/teacher/modals/ConfirmModal'
+import ResetAllModal from '../components/teacher/modals/ResetAllModal'
+import SettingsTab from '../components/teacher/SettingsTab'
 
 function generateCode(len = 6) {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -155,6 +157,12 @@ export default function TeacherDashboard() {
   const windowTimerRef   = useRef(null)
   const resolvingRef     = useRef(false)
 
+  // Anytime ability uses (from students outside combat windows)
+  const [anytimeUses, setAnytimeUses] = useState([])
+
+  // Reset all modal
+  const [resetAllModalOpen, setResetAllModalOpen] = useState(false)
+
   // ── Fetch helpers ──────────────────────────────────────────────
   const fetchStudents = useCallback(async (classId) => {
     const id = classId ?? classData?.id
@@ -272,6 +280,12 @@ export default function TeacherDashboard() {
       .channel('ability-window-' + classData.id)
       .on('broadcast', { event: 'ability_activated' }, ({ payload }) => {
         setWindowActivations(prev => [...prev, payload])
+      })
+      .on('broadcast', { event: 'anytime_ability_used' }, ({ payload }) => {
+        setAnytimeUses(prev => [...prev, { ...payload, status: 'pending' }])
+      })
+      .on('broadcast', { event: 'anytime_ability_undone' }, () => {
+        // student portal handles the toast — nothing needed on teacher side here
       })
       .subscribe()
     windowChannelRef.current = channel
@@ -562,10 +576,95 @@ export default function TeacherDashboard() {
 
   const resetAll = useCallback(async () => {
     if (!classData) return
-    await supabase.from('students').update({ xp: 0, hp: MAX_HP }).eq('class_id', classData.id)
-    setStudents(prev => prev.map(s => ({ ...s, xp: 0, hp: MAX_HP })))
-    toast('Class reset', 'ok')
+    // Wipe XP, HP, AP for all students in class
+    await supabase.from('students')
+      .update({ xp: 0, hp: MAX_HP, ap: MAX_AP })
+      .eq('class_id', classData.id)
+    // Delete all ability purchases for students in this class
+    const studentIds = students.map(s => s.id)
+    if (studentIds.length > 0) {
+      await supabase.from('student_abilities')
+        .delete()
+        .in('student_id', studentIds)
+    }
+    setStudents(prev => prev.map(s => ({ ...s, xp: 0, hp: MAX_HP, ap: MAX_AP, student_abilities: [] })))
+    setAnytimeUses([])
+    toast('Class wiped — fresh start!', 'ok')
   }, [classData, students, toast])
+
+  // ── Anytime ability undo / approve / deny ─────────────────────
+  const undoAnytimeUse = useCallback(async (use) => {
+    // Restore snapshots (reverse the DB effect)
+    for (const [sid, snap] of Object.entries(use.snapshots ?? {})) {
+      const update = {}
+      if (snap.hp != null) update.hp = snap.hp
+      if (snap.ap != null) update.ap = snap.ap
+      if (Object.keys(update).length) {
+        await supabase.from('students').update(update).eq('id', sid)
+      }
+    }
+    // Restore ability token
+    const { data: existing } = await supabase
+      .from('student_abilities')
+      .select('quantity')
+      .eq('student_id', use.studentId)
+      .eq('ability_id', use.abilityId)
+      .maybeSingle()
+    if (existing) {
+      await supabase.from('student_abilities')
+        .update({ quantity: existing.quantity + 1 })
+        .eq('student_id', use.studentId)
+        .eq('ability_id', use.abilityId)
+    } else {
+      await supabase.from('student_abilities')
+        .insert({ student_id: use.studentId, ability_id: use.abilityId, quantity: 1 })
+    }
+    // Notify student
+    windowChannelRef.current?.send({
+      type: 'broadcast', event: 'anytime_revoked',
+      payload: { useId: use.useId, studentId: use.studentId, abilityName: use.abilityName }
+    })
+    setAnytimeUses(prev => prev.filter(u => u.useId !== use.useId))
+    toast(`Undone: ${use.abilityName} by ${use.studentName}`, 'ok')
+    await fetchStudents()
+  }, [toast, fetchStudents])
+
+  const approveAnytimeUse = useCallback((useId) => {
+    setAnytimeUses(prev => prev.map(u => u.useId === useId ? { ...u, status: 'approved' } : u))
+  }, [])
+
+  const denyAnytimeUse = useCallback(async (use) => {
+    // Restore AP that was spent
+    const s = students.find(x => x.id === use.studentId)
+    if (s && use.apCost > 0) {
+      const restoredAP = Math.min((s.ap ?? MAX_AP) + use.apCost, MAX_AP)
+      await supabase.from('students').update({ ap: restoredAP }).eq('id', use.studentId)
+    }
+    // Restore ability token
+    const { data: existing } = await supabase
+      .from('student_abilities')
+      .select('quantity')
+      .eq('student_id', use.studentId)
+      .eq('ability_id', use.abilityId)
+      .maybeSingle()
+    if (existing) {
+      await supabase.from('student_abilities')
+        .update({ quantity: existing.quantity + 1 })
+        .eq('student_id', use.studentId)
+        .eq('ability_id', use.abilityId)
+    } else {
+      await supabase.from('student_abilities')
+        .insert({ student_id: use.studentId, ability_id: use.abilityId, quantity: 1 })
+    }
+    // Notify student
+    windowChannelRef.current?.send({
+      type: 'broadcast', event: 'anytime_revoked',
+      payload: { useId: use.useId, studentId: use.studentId, abilityName: use.abilityName }
+    })
+    setAnytimeUses(prev => prev.filter(u => u.useId !== use.useId))
+    toast(`Denied: ${use.abilityName} by ${use.studentName}`, 'ok')
+    await fetchStudents()
+  }, [students, toast, fetchStudents])
 
   // ── Alias approval ─────────────────────────────────────────────
   const approveAlias = useCallback(async (studentId) => {
@@ -746,7 +845,7 @@ export default function TeacherDashboard() {
         onAddStudent={() => setStudentModal({ open: true, student: null })}
         onLeaderboardMode={() => setLbModeOpen(true)}
         onExport={exportData}
-        onResetAll={() => confirmAction('RESET CLASS?', `Set XP to 0 and HP to ${MAX_HP} for ALL students. Ability purchases are preserved.`, resetAll)}
+        onResetAll={() => setResetAllModalOpen(true)}
         onSignOut={signOut}
         windowOpen={!!classData?.window_open}
         onOpenWindow={() => setCombatForm(prev => ({ ...prev, open: true }))}
@@ -759,6 +858,48 @@ export default function TeacherDashboard() {
           activations={windowActivations}
           onManualClose={closeAbilityWindow}
         />
+      )}
+
+      {/* ── Anytime ability notifications ──────────────────────── */}
+      {anytimeUses.length > 0 && (
+        <div className="anytime-panel">
+          <div className="anytime-panel-header">⚡ Ability Uses</div>
+          {anytimeUses.map(use => {
+            const isSocial = use.effectType === 'social' || use.effectType === 'xp_bonus'
+            const isPending = use.status === 'pending'
+            return (
+              <div key={use.useId} className={`anytime-use-card ${isSocial ? 'auc-social' : ''}`}>
+                <span className="auc-icon">{use.abilityIcon}</span>
+                <div className="auc-desc">
+                  <div>
+                    <strong>{use.studentName}</strong> used <strong>{use.abilityName}</strong>
+                    {use.targetName && ` → ${use.targetName}`}
+                    {use.effectType === 'heal' && ` (+${use.effectValue} HP)`}
+                    {use.effectType === 'heal_all' && ` (all allies +${use.effectValue} HP)`}
+                    {use.effectType === 'ap' && ` (+${use.effectValue} AP)`}
+                    {use.effectType === 'transfer_ap' && ` (${use.targetName} +${use.give} AP)`}
+                    {use.effectType === 'revive' && ` (revived to 25 HP)`}
+                  </div>
+                  {use.note && <div className="auc-note">{use.note}</div>}
+                </div>
+                <div className="auc-actions">
+                  {use.status !== 'pending' ? (
+                    <span className={`auc-status auc-status-${use.status}`}>
+                      {use.status.toUpperCase()}
+                    </span>
+                  ) : isSocial ? (
+                    <>
+                      <button className="auc-btn auc-btn-approve" onClick={() => approveAnytimeUse(use.useId)}>Approve</button>
+                      <button className="auc-btn auc-btn-deny" onClick={() => denyAnytimeUse(use)}>Deny</button>
+                    </>
+                  ) : (
+                    <button className="auc-btn auc-btn-undo" onClick={() => undoAnytimeUse(use)}>Undo</button>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
       )}
 
       <TabBar activeTab={activeTab} onSwitch={setActiveTab} pendingCount={pendingAliases.length} />
@@ -812,6 +953,16 @@ export default function TeacherDashboard() {
         />
       )}
 
+      {activeTab === 'settings' && (
+        <SettingsTab
+          session={session}
+          allClasses={allClasses}
+          classData={classData}
+          onRename={renameClass}
+          onCreateClass={createClass}
+        />
+      )}
+
       <LeaderboardMode
         open={lbModeOpen}
         onClose={() => setLbModeOpen(false)}
@@ -835,6 +986,13 @@ export default function TeacherDashboard() {
         message={confirmModal.message}
         onConfirm={() => { confirmModal.onConfirm?.(); setConfirmModal(prev => ({ ...prev, open: false })) }}
         onClose={() => setConfirmModal(prev => ({ ...prev, open: false }))}
+      />
+
+      <ResetAllModal
+        open={resetAllModalOpen}
+        className={classData?.name}
+        onConfirm={resetAll}
+        onClose={() => setResetAllModalOpen(false)}
       />
 
       {/* ── Combat event form ──────────────────────────────────── */}
